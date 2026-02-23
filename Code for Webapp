@@ -1,6 +1,4 @@
-from IPython.display import HTML
 
-HTML("""
 <!DOCTYPE html>
 <html>
 <head>
@@ -48,7 +46,6 @@ input, select {
     margin-bottom: 18px;
     border-radius: 8px;
     border: 1px solid #ccc;
-    font-size: 14px;
 }
 
 button {
@@ -58,14 +55,13 @@ button {
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 15px;
     cursor: pointer;
 }
 
-.reset-btn {
-    margin-top: 20px;
-    background: #111827;
-}
+button:hover { opacity: 0.9; }
+
+.reset-btn { background: #111827; margin-top: 20px; }
+.logout-btn { background: #b91c1c; margin-top: 10px; }
 
 .summary {
     display: flex;
@@ -87,6 +83,17 @@ button {
 .expense-box { background: #dc2626; }
 .balance-box { background: #2563eb; }
 
+.chart-wrapper {
+    max-width: 320px;
+    height: 320px;
+    margin: 20px auto;
+}
+
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -94,16 +101,11 @@ table {
 
 th, td {
     padding: 12px;
-    text-align: left;
 }
 
 th { background-color: #f1f5f9; }
 
-canvas {
-    max-width: 500px;
-    margin: 20px auto;
-    display: block;
-}
+.hidden { display: none; }
 </style>
 </head>
 
@@ -112,6 +114,16 @@ canvas {
 <header>💰 Personal Financial Tracker</header>
 
 <div class="container">
+
+<div class="card" id="authCard">
+<h2>Login / Register</h2>
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+</div>
+
+<div id="app" class="hidden">
 
 <div class="card">
 <h2>Add Monthly Income</h2>
@@ -149,12 +161,14 @@ Remaining Balance<br>$<span id="balance">0</span>
 </div>
 
 <button class="reset-btn" onclick="resetData()">Reset All Data</button>
-
+<button class="logout-btn" onclick="logout()">Logout</button>
 </div>
 
 <div class="card">
 <h2>Spending Breakdown</h2>
+<div class="chart-wrapper">
 <canvas id="budgetChart"></canvas>
+</div>
 </div>
 
 <div class="card">
@@ -172,27 +186,89 @@ Remaining Balance<br>$<span id="balance">0</span>
 </div>
 
 </div>
+</div>
 
 <script>
 let totalIncome = 0;
 let totalExpenses = 0;
 let categoryTotals = {};
-let chart;
+let chart = null;
+let currentUser = null;
 
-// ---------- STORAGE FUNCTIONS ----------
+// ---------------- AUTH ----------------
+
+function register() {
+    const username = usernameInput();
+    const password = passwordInput();
+    if (!username || !password) return alert("Fill all fields");
+
+    if (localStorage.getItem("user_" + username)) {
+        return alert("User already exists");
+    }
+
+    localStorage.setItem("user_" + username, JSON.stringify({
+        password: password,
+        financeData: null
+    }));
+
+    alert("Registered successfully!");
+}
+
+function login() {
+    const username = usernameInput();
+    const password = passwordInput();
+
+    const user = JSON.parse(localStorage.getItem("user_" + username));
+    if (!user || user.password !== password) {
+        return alert("Invalid credentials");
+    }
+
+    currentUser = username;
+
+    document.getElementById("authCard").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+
+    resetUI();
+    loadData();
+}
+
+function logout() {
+    currentUser = null;
+    document.getElementById("authCard").classList.remove("hidden");
+    document.getElementById("app").classList.add("hidden");
+    resetUI();
+}
+
+function usernameInput() {
+    return document.getElementById("username").value;
+}
+
+function passwordInput() {
+    return document.getElementById("password").value;
+}
+
+// ---------------- STORAGE ----------------
+
 function saveData() {
+    if (!currentUser) return;
+
     const data = {
         totalIncome,
         totalExpenses,
         categoryTotals,
         expenses: getTableData()
     };
-    localStorage.setItem("financeData", JSON.stringify(data));
+
+    const user = JSON.parse(localStorage.getItem("user_" + currentUser));
+    user.financeData = data;
+    localStorage.setItem("user_" + currentUser, JSON.stringify(user));
 }
 
 function loadData() {
-    const saved = JSON.parse(localStorage.getItem("financeData"));
-    if (!saved) return;
+    const user = JSON.parse(localStorage.getItem("user_" + currentUser));
+    if (!user || !user.financeData) return;
+
+    const saved = user.financeData;
 
     totalIncome = saved.totalIncome || 0;
     totalExpenses = saved.totalExpenses || 0;
@@ -202,9 +278,13 @@ function loadData() {
     document.getElementById("totalExpenses").textContent = totalExpenses;
     updateBalance();
 
-    saved.expenses.forEach(exp => {
-        addExpenseRow(exp.name, exp.category, exp.amount, false);
-    });
+    document.getElementById("expenseTable").innerHTML = "";
+
+    if (saved.expenses) {
+        saved.expenses.forEach(exp => {
+            addExpenseRow(exp.name, exp.category, exp.amount);
+        });
+    }
 
     updateChart();
 }
@@ -223,11 +303,12 @@ function getTableData() {
     return expenses;
 }
 
-// ---------- CHART ----------
+// ---------------- CHART ----------------
+
 function createChart() {
     const ctx = document.getElementById('budgetChart').getContext('2d');
     chart = new Chart(ctx, {
-        type: 'pie',
+        type: 'doughnut',
         data: {
             labels: [],
             datasets: [{
@@ -237,17 +318,26 @@ function createChart() {
                     '#f59e0b','#8b5cf6','#14b8a6'
                 ]
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
         }
     });
 }
 
 function updateChart() {
+    if (!chart) return;
     chart.data.labels = Object.keys(categoryTotals);
     chart.data.datasets[0].data = Object.values(categoryTotals);
     chart.update();
 }
 
-// ---------- APP FUNCTIONS ----------
+// ---------------- APP ----------------
+
 function addIncome() {
     const value = parseFloat(document.getElementById("incomeInput").value);
     if (!isNaN(value)) {
@@ -272,7 +362,8 @@ function addExpense() {
         if (!categoryTotals[category]) categoryTotals[category] = 0;
         categoryTotals[category] += amount;
 
-        addExpenseRow(name, category, amount, true);
+        addExpenseRow(name, category, amount);
+
         updateBalance();
         updateChart();
         saveData();
@@ -282,23 +373,19 @@ function addExpense() {
     }
 }
 
-function addExpenseRow(name, category, amount, save = true) {
-    const table = document.getElementById("expenseTable");
-    const row = table.insertRow();
+function addExpenseRow(name, category, amount) {
+    const row = document.getElementById("expenseTable").insertRow();
     row.insertCell(0).textContent = name;
     row.insertCell(1).textContent = category;
     row.insertCell(2).textContent = "$" + amount;
-    if (save) saveData();
 }
 
 function updateBalance() {
     document.getElementById("balance").textContent = totalIncome - totalExpenses;
 }
 
-// ---------- RESET FUNCTION ----------
 function resetData() {
-
-    if (!confirm("Are you sure you want to delete all saved data?")) return;
+    if (!confirm("Delete all saved data?")) return;
 
     totalIncome = 0;
     totalExpenses = 0;
@@ -307,23 +394,27 @@ function resetData() {
     document.getElementById("totalIncome").textContent = 0;
     document.getElementById("totalExpenses").textContent = 0;
     document.getElementById("balance").textContent = 0;
-
     document.getElementById("expenseTable").innerHTML = "";
 
-    chart.data.labels = [];
-    chart.data.datasets[0].data = [];
-    chart.update();
-
-    localStorage.removeItem("financeData");
+    updateChart();
+    saveData();
 }
 
-// ---------- INIT ----------
+function resetUI() {
+    totalIncome = 0;
+    totalExpenses = 0;
+    categoryTotals = {};
+    document.getElementById("totalIncome").textContent = 0;
+    document.getElementById("totalExpenses").textContent = 0;
+    document.getElementById("balance").textContent = 0;
+    document.getElementById("expenseTable").innerHTML = "";
+    updateChart();
+}
+
 window.onload = function() {
     createChart();
-    loadData();
 };
 </script>
 
 </body>
 </html>
-""")
