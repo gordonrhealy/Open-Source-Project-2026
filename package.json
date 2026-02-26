@@ -1,0 +1,24 @@
+{
+  "name": "financial",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^40.6.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.project.finance",
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
