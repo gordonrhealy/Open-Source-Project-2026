@@ -40,4 +40,20 @@ cd (File or Folder)
 npm install
 npm start
 
+
+## 🛠️ Building the Windows Executable Yourself
+
+You can package the Financial Tracker into a standalone Windows `.exe` using Electron. This lets the app run on any Windows machine without needing Node.js, a browser, or development tools.
+
+### Prerequisites
+- Node.js installed on your system  
+- All project dependencies installed (`npm install`)  
+- Electron and your chosen builder configured in `package.json`
+
+### Build Steps
+
+1. Install all project dependencies:
+   ```bash
+   npm install
+
 > Written with [StackEdit](https://stackedit.io/).
