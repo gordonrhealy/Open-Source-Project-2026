@@ -56,4 +56,8 @@ You can package the Financial Tracker into a standalone Windows `.exe` using Ele
    ```bash
    npm install
 
+2. npm run build
+
+3. npx electron-builder
+
 > Written with [StackEdit](https://stackedit.io/).
