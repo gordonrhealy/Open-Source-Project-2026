@@ -6,7 +6,7 @@ Before contributing, please:
 • 	Check existing issues to avoid duplicates.
 • 	Ensure your contribution aligns with the project’s goals: simplicity, clarity, and reliability.
 How to Set Up the Project Locally
-1. 	Clone the repository: https://github.com/gordonrhealy/Open-Source-Project-2026
+1. Clone the repository: https://github.com/gordonrhealy/Open-Source-Project-2026
 2. Install dependencies: npm install
 3. Start the development server: npm run dev
    
@@ -31,7 +31,7 @@ Making Changes (Pull Requests)
 3. 	Run tests (if available) and ensure everything passes.
 4. 	Commit using clear, descriptive messages
 5. 	Push your branch
-6. 	6. 	Open a Pull Request and include:
+6  	Open a Pull Request and include:
 • 	What the PR does
 • 	Linked issue (e.g., “Fixes #12”)
 • 	Screenshots for UI changes
