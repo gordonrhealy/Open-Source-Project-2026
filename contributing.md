@@ -27,11 +27,11 @@ Use the Feature Request issue template.
 
 Making Changes (Pull Requests)
 1. 	Create a new branch
-2. 	2. 	Make your changes following the project’s coding style.
+2.    Make your changes following the project’s coding style.
 3. 	Run tests (if available) and ensure everything passes.
 4. 	Commit using clear, descriptive messages
 5. 	Push your branch
-6  	Open a Pull Request and include:
+6.  	Open a Pull Request and include:
 • 	What the PR does
 • 	Linked issue (e.g., “Fixes #12”)
 • 	Screenshots for UI changes
