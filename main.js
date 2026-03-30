@@ -11,7 +11,7 @@ function createWindow() {
     }
   });
 
-  win.loadFile('index.html');
+  win.loadFile('graph.html');
 }
 
 app.whenReady().then(createWindow);
