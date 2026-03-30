@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <style>
 body {
@@ -226,40 +226,43 @@ let timeChart = null;
 let currentUser = null;
 
 // AUTH
-function register() {
+async function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
     if (!username || !password) return alert("Fill all fields");
 
-    if (localStorage.getItem("user_" + username)) {
-        return alert("User already exists");
-    }
+    const res = await fetch("http://localhost:3000/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
 
-    localStorage.setItem("user_" + username, JSON.stringify({
-        password: password,
-        financeData: null
-    }));
+    if (!res.ok) return alert("User exists");
 
-    alert("Registered successfully!");
+    alert("Registered!");
 }
-
-function login() {
+async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    const user = JSON.parse(localStorage.getItem("user_" + username));
-    if (!user || user.password !== password) {
-        return alert("Invalid credentials");
-    }
+    const res = await fetch("http://localhost:3000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+
+    if (!res.ok) return alert("Invalid login");
 
     currentUser = username;
+
     document.getElementById("authCard").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
     resetUI();
     loadData();
 }
+
 
 function logout() {
     currentUser = null;
@@ -269,7 +272,7 @@ function logout() {
 }
 
 // STORAGE
-function saveData() {
+async function saveData() {
     if (!currentUser) return;
 
     const data = {
@@ -279,16 +282,20 @@ function saveData() {
         expenseHistory
     };
 
-    const user = JSON.parse(localStorage.getItem("user_" + currentUser));
-    user.financeData = data;
-    localStorage.setItem("user_" + currentUser, JSON.stringify(user));
+    await fetch("http://localhost:3000/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            username: currentUser,
+            data
+        })
+    });
 }
+async function loadData() {
+    const res = await fetch(`http://localhost:3000/load/${currentUser}`);
+    const saved = await res.json();
 
-function loadData() {
-    const user = JSON.parse(localStorage.getItem("user_" + currentUser));
-    if (!user || !user.financeData) return;
-
-    const saved = user.financeData;
+    if (!saved) return;
 
     totalIncome = saved.totalIncome || 0;
     totalExpenses = saved.totalExpenses || 0;
@@ -297,6 +304,7 @@ function loadData() {
 
     document.getElementById("totalIncome").textContent = totalIncome;
     document.getElementById("totalExpenses").textContent = totalExpenses;
+
     updateBalance();
 
     document.getElementById("expenseTable").innerHTML = "";
