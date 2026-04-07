@@ -30,24 +30,51 @@ A simple, lightweight financial tracking application built as a web app and pack
 
 ---
 
-## 🛠️ Running the Web App (Development Mode)
+## 🛠️ Running the App Locally
 
-To run the project as a web app:
+### Prerequisites
 
-```bash
-git clone <https://github.com/gordonrhealy/Open-Source-Project-2026.git>
-cd (File or Folder)
-npm install
-npm start
+- [Node.js](https://nodejs.org/) installed on your system
+- [MongoDB](https://www.mongodb.com/try/download/community) installed and running locally
 
+### Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/gordonrhealy/Open-Source-Project-2026.git
+   cd Open-Source-Project-2026
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start MongoDB (if it isn't already running):
+   ```bash
+   mongod
+   ```
+
+4. Start the backend server (in one terminal):
+   ```bash
+   npm run dev
+   ```
+   The server will run on `http://localhost:3000`.
+
+5. Open `graph.html` in your browser, or run the Electron desktop app (in another terminal):
+   ```bash
+   npm start
+   ```
+
+---
 
 ## 🛠️ Building the Windows Executable Yourself
 
 You can package the Financial Tracker into a standalone Windows `.exe` using Electron. This lets the app run on any Windows machine without needing Node.js, a browser, or development tools.
 
 ### Prerequisites
-- Node.js installed on your system  
-- All project dependencies installed (`npm install`)  
+- Node.js installed on your system
+- All project dependencies installed (`npm install`)
 - Electron and your chosen builder configured in `package.json`
 
 ### Build Steps
@@ -55,9 +82,11 @@ You can package the Financial Tracker into a standalone Windows `.exe` using Ele
 1. Install all project dependencies:
    ```bash
    npm install
+   ```
 
-2. npm run build
-
-3. npx electron-builder
+2. Build the executable:
+   ```bash
+   npm run build
+   ```
 
 > Written with [StackEdit](https://stackedit.io/).
