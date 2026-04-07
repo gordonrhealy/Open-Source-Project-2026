@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+}
+
+header {
+    text-align: center;
+    padding: 25px;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.container {
+    width: 90%;
+    max-width: 550px;
+    margin: 20px auto 50px auto;
+}
+
+.card {
+    background: white;
+    padding: 55px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    margin-bottom: 25px;
+}
+
+h2 {
+    margin-top: 0;
+    color: #1e3c72;
+}
+
+/* FIXED INPUT + SELECT SIZE */
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    height: 48px;
+    box-sizing: border-box;
+}
+
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: white;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='%231e3c72' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px;
+    padding-right: 40px;
+}
+
+button {
+    width: 100%;
+    padding: 20px;
+    background: #2a5298;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    height: 48px;
+}
+
+button:hover { opacity: 0.9; }
+
+.reset-btn { background: #111827; margin-top: 20px; }
+.logout-btn { background: #b91c1c; margin-top: 10px; }
+
+.summary {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.summary-box {
+    flex: 1;
+    min-width: 200px;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+}
+
+.income-box { background: #16a34a; }
+.expense-box { background: #dc2626; }
+.balance-box { background: #2563eb; }
+
+.chart-wrapper {
+    max-width: 500px;
+    height: 350px;
+    margin: 20px auto;
+}
+
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+}
+
+th { background-color: #f1f5f9; }
+
+.hidden { display: none; }
+</style>
+</head>
+
+<body>
+
+<header>💰 Personal Financial Tracker</header>
+
+<div class="container">
+
+<div class="card" id="authCard">
+<h2>Login / Register</h2>
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+</div>
+
+<div id="app" class="hidden">
+
+<div class="card">
+<h2>Add Monthly Income</h2>
+<input type="number" id="incomeInput" placeholder="Enter total income">
+<button onclick="addIncome()">Add Income</button>
+</div>
+
+<div class="card">
+<h2>Add Expense</h2>
+<input type="text" id="expenseName" placeholder="Expense Name">
+
+<select id="expenseCategory">
+<option>Housing</option>
+<option>Food</option>
+<option>Transportation</option>
+<option>Utilities</option>
+<option>Entertainment</option>
+<option>Other</option>
+</select>
+
+<input type="date" id="expenseDate">
+<input type="number" id="expenseAmount" placeholder="Expense Amount">
+<button onclick="addExpense()">Add Expense</button>
+</div>
+
+<div class="card">
+<h2>Financial Summary</h2>
+<div class="summary">
+<div class="summary-box income-box">
+Total Income<br>$<span id="totalIncome">0</span>
+</div>
+<div class="summary-box expense-box">
+Total Expenses<br>$<span id="totalExpenses">0</span>
+</div>
+<div class="summary-box balance-box">
+Remaining Balance<br>$<span id="balance">0</span>
+</div>
+</div>
+
+<button class="reset-btn" onclick="resetData()">Reset All Data</button>
+<button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="card">
+<h2>Spending Breakdown</h2>
+<div class="chart-wrapper">
+<canvas id="budgetChart"></canvas>
+</div>
+</div>
+
+<div class="card">
+<h2>Spending Over Time</h2>
+<div class="chart-wrapper">
+<canvas id="timeChart"></canvas>
+</div>
+</div>
+
+<div class="card">
+<h2>Expense History</h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Category</th>
+<th>Amount</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody id="expenseTable"></tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<script>
+let totalIncome = 0;
+let totalExpenses = 0;
+let categoryTotals = {};
+let expenseHistory = [];
+let chart = null;
+let timeChart = null;
+let currentUser = null;
+
+// AUTH
+function register() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    if (!username || !password) return alert("Fill all fields");
+
+    if (localStorage.getItem("user_" + username)) {
+        return alert("User already exists");
+    }
+
+    localStorage.setItem("user_" + username, JSON.stringify({
+        password: password,
+        financeData: null
+    }));
+
+    alert("Registered successfully!");
+}
+
+function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const user = JSON.parse(localStorage.getItem("user_" + username));
+    if (!user || user.password !== password) {
+        return alert("Invalid credentials");
+    }
+
+    currentUser = username;
+    document.getElementById("authCard").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+
+    resetUI();
+    loadData();
+}
+
+function logout() {
+    currentUser = null;
+    document.getElementById("authCard").classList.remove("hidden");
+    document.getElementById("app").classList.add("hidden");
+    resetUI();
+}
+
+// STORAGE
+function saveData() {
+    if (!currentUser) return;
+
+    const data = {
+        totalIncome,
+        totalExpenses,
+        categoryTotals,
+        expenseHistory
+    };
+
+    const user = JSON.parse(localStorage.getItem("user_" + currentUser));
+    user.financeData = data;
+    localStorage.setItem("user_" + currentUser, JSON.stringify(user));
+}
+
+function loadData() {
+    const user = JSON.parse(localStorage.getItem("user_" + currentUser));
+    if (!user || !user.financeData) return;
+
+    const saved = user.financeData;
+
+    totalIncome = saved.totalIncome || 0;
+    totalExpenses = saved.totalExpenses || 0;
+    categoryTotals = saved.categoryTotals || {};
+    expenseHistory = saved.expenseHistory || [];
+
+    document.getElementById("totalIncome").textContent = totalIncome;
+    document.getElementById("totalExpenses").textContent = totalExpenses;
+    updateBalance();
+
+    document.getElementById("expenseTable").innerHTML = "";
+
+    expenseHistory.forEach(exp => {
+        addExpenseRow(exp.name, exp.category, exp.amount, exp.date);
+    });
+
+    updateChart();
+    updateTimeChart();
+}
+
+// CHARTS
+function createChart() {
+    const ctx = document.getElementById('budgetChart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#16a34a',
+                    '#dc2626',
+                    '#2563eb',
+                    '#f59e0b',
+                    '#8b5cf6',
+                    '#14b8a6'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+function createTimeChart() {
+    const ctx = document.getElementById('timeChart').getContext('2d');
+    timeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Cumulative Spending',
+                data: [],
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37,99,235,0.2)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function updateChart() {
+    chart.data.labels = Object.keys(categoryTotals);
+    chart.data.datasets[0].data = Object.values(categoryTotals);
+    chart.update();
+}
+
+function updateTimeChart() {
+    const grouped = {};
+    expenseHistory.forEach(exp => {
+        if (!grouped[exp.date]) grouped[exp.date] = 0;
+        grouped[exp.date] += exp.amount;
+    });
+
+    const dates = Object.keys(grouped).sort();
+    let cumulative = 0;
+    const totals = dates.map(date => {
+        cumulative += grouped[date];
+        return cumulative;
+    });
+
+    timeChart.data.labels = dates;
+    timeChart.data.datasets[0].data = totals;
+    timeChart.update();
+}
+
+// APP
+function addIncome() {
+    const value = parseFloat(document.getElementById("incomeInput").value);
+    if (!isNaN(value)) {
+        totalIncome += value;
+        document.getElementById("totalIncome").textContent = totalIncome;
+        updateBalance();
+        saveData();
+        document.getElementById("incomeInput").value = "";
+    }
+}
+
+function addExpense() {
+    const name = document.getElementById("expenseName").value;
+    const category = document.getElementById("expenseCategory").value;
+    const date = document.getElementById("expenseDate").value;
+    const amount = parseFloat(document.getElementById("expenseAmount").value);
+
+    if (!name || !date || isNaN(amount)) {
+        return alert("Fill all fields");
+    }
+
+    totalExpenses += amount;
+    document.getElementById("totalExpenses").textContent = totalExpenses;
+
+    if (!categoryTotals[category]) categoryTotals[category] = 0;
+    categoryTotals[category] += amount;
+
+    expenseHistory.push({ name, category, amount, date });
+    addExpenseRow(name, category, amount, date);
+
+    updateBalance();
+    updateChart();
+    updateTimeChart();
+    saveData();
+
+    document.getElementById("expenseName").value = "";
+    document.getElementById("expenseAmount").value = "";
+    document.getElementById("expenseDate").value = "";
+}
+
+function addExpenseRow(name, category, amount, date) {
+    const row = document.getElementById("expenseTable").insertRow();
+    row.insertCell(0).textContent = name;
+    row.insertCell(1).textContent = category;
+    row.insertCell(2).textContent = "$" + amount;
+    row.insertCell(3).textContent = date;
+}
+
+function updateBalance() {
+    document.getElementById("balance").textContent = totalIncome - totalExpenses;
+}
+
+function resetData() {
+    if (!confirm("Delete all saved data?")) return;
+
+    totalIncome = 0;
+    totalExpenses = 0;
+    categoryTotals = {};
+    expenseHistory = [];
+
+    document.getElementById("totalIncome").textContent = 0;
+    document.getElementById("totalExpenses").textContent = 0;
+    document.getElementById("balance").textContent = 0;
+    document.getElementById("expenseTable").innerHTML = "";
+
+    updateChart();
+    updateTimeChart();
+    saveData();
+}
+
+function resetUI() {
+    totalIncome = 0;
+    totalExpenses = 0;
+    categoryTotals = {};
+    expenseHistory = [];
+    document.getElementById("totalIncome").textContent = 0;
+    document.getElementById("totalExpenses").textContent = 0;
+    document.getElementById("balance").textContent = 0;
+    document.getElementById("expenseTable").innerHTML = "";
+}
+
+window.onload = function() {
+    createChart();
+    createTimeChart();
+};
+</script>
+
+</body>
+</html>

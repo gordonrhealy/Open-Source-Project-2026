@@ -1,0 +1,299 @@
+from IPython.display import HTML
+
+HTML("""
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+}
+
+header {
+    text-align: center;
+    padding: 25px;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.container {
+    width: 90%;
+    max-width: 1100px;
+    margin: 20px auto 50px auto;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    margin-bottom: 25px;
+}
+
+h2 {
+    margin-top: 0;
+    color: #1e3c72;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background: #2a5298;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.summary {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.summary-box {
+    flex: 1;
+    min-width: 200px;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+}
+
+.income-box { background: #16a34a; }
+.expense-box { background: #dc2626; }
+.balance-box { background: #2563eb; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+}
+
+th { background-color: #f1f5f9; }
+
+canvas {
+    max-width: 500px;
+    margin: 20px auto;
+    display: block;
+}
+</style>
+</head>
+
+<body>
+
+<header>💰 Personal Financial Tracker</header>
+
+<div class="container">
+
+<div class="card">
+<h2>Add Monthly Income</h2>
+<input type="number" id="incomeInput" placeholder="Enter total income">
+<button onclick="addIncome()">Add Income</button>
+</div>
+
+<div class="card">
+<h2>Add Expense</h2>
+<input type="text" id="expenseName" placeholder="Expense Name">
+<select id="expenseCategory">
+<option>Housing</option>
+<option>Food</option>
+<option>Transportation</option>
+<option>Utilities</option>
+<option>Entertainment</option>
+<option>Other</option>
+</select>
+<input type="number" id="expenseAmount" placeholder="Expense Amount">
+<button onclick="addExpense()">Add Expense</button>
+</div>
+
+<div class="card">
+<h2>Financial Summary</h2>
+<div class="summary">
+<div class="summary-box income-box">
+Total Income<br>$<span id="totalIncome">0</span>
+</div>
+<div class="summary-box expense-box">
+Total Expenses<br>$<span id="totalExpenses">0</span>
+</div>
+<div class="summary-box balance-box">
+Remaining Balance<br>$<span id="balance">0</span>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Spending Breakdown</h2>
+<canvas id="budgetChart"></canvas>
+</div>
+
+<div class="card">
+<h2>Expense History</h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Category</th>
+<th>Amount</th>
+</tr>
+</thead>
+<tbody id="expenseTable"></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+let totalIncome = 0;
+let totalExpenses = 0;
+let categoryTotals = {};
+let chart;
+
+// ---------- STORAGE FUNCTIONS ----------
+function saveData() {
+    const data = {
+        totalIncome,
+        totalExpenses,
+        categoryTotals,
+        expenses: getTableData()
+    };
+    localStorage.setItem("financeData", JSON.stringify(data));
+}
+
+function loadData() {
+    const saved = JSON.parse(localStorage.getItem("financeData"));
+    if (!saved) return;
+
+    totalIncome = saved.totalIncome || 0;
+    totalExpenses = saved.totalExpenses || 0;
+    categoryTotals = saved.categoryTotals || {};
+
+    document.getElementById("totalIncome").textContent = totalIncome;
+    document.getElementById("totalExpenses").textContent = totalExpenses;
+    updateBalance();
+
+    saved.expenses.forEach(exp => {
+        addExpenseRow(exp.name, exp.category, exp.amount, false);
+    });
+
+    updateChart();
+}
+
+function getTableData() {
+    const rows = document.querySelectorAll("#expenseTable tr");
+    let expenses = [];
+    rows.forEach(row => {
+        const cells = row.querySelectorAll("td");
+        expenses.push({
+            name: cells[0].textContent,
+            category: cells[1].textContent,
+            amount: parseFloat(cells[2].textContent.replace("$",""))
+        });
+    });
+    return expenses;
+}
+
+// ---------- CHART ----------
+function createChart() {
+    const ctx = document.getElementById('budgetChart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#16a34a','#dc2626','#2563eb',
+                    '#f59e0b','#8b5cf6','#14b8a6'
+                ]
+            }]
+        }
+    });
+}
+
+function updateChart() {
+    chart.data.labels = Object.keys(categoryTotals);
+    chart.data.datasets[0].data = Object.values(categoryTotals);
+    chart.update();
+}
+
+// ---------- APP FUNCTIONS ----------
+function addIncome() {
+    const value = parseFloat(document.getElementById("incomeInput").value);
+    if (!isNaN(value)) {
+        totalIncome += value;
+        document.getElementById("totalIncome").textContent = totalIncome;
+        updateBalance();
+        saveData();
+        document.getElementById("incomeInput").value = "";
+    }
+}
+
+function addExpense() {
+    const name = document.getElementById("expenseName").value;
+    const category = document.getElementById("expenseCategory").value;
+    const amount = parseFloat(document.getElementById("expenseAmount").value);
+
+    if (name && !isNaN(amount)) {
+
+        totalExpenses += amount;
+        document.getElementById("totalExpenses").textContent = totalExpenses;
+
+        if (!categoryTotals[category]) categoryTotals[category] = 0;
+        categoryTotals[category] += amount;
+
+        addExpenseRow(name, category, amount, true);
+        updateBalance();
+        updateChart();
+        saveData();
+
+        document.getElementById("expenseName").value = "";
+        document.getElementById("expenseAmount").value = "";
+    }
+}
+
+function addExpenseRow(name, category, amount, save = true) {
+    const table = document.getElementById("expenseTable");
+    const row = table.insertRow();
+    row.insertCell(0).textContent = name;
+    row.insertCell(1).textContent = category;
+    row.insertCell(2).textContent = "$" + amount;
+    if (save) saveData();
+}
+
+function updateBalance() {
+    document.getElementById("balance").textContent = totalIncome - totalExpenses;
+}
+
+// ---------- INIT ----------
+window.onload = function() {
+    createChart();
+    loadData();
+};
+</script>
+
+</body>
+</html>
+""")
