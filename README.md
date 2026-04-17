@@ -55,7 +55,7 @@ cp .env.example .env
 ```
 Edit `.env`:
 ```env
-MONGODB_URI=mongodb://127.0.0.1:27017/finova   # or your Atlas connection string
+MONGODB_URI=mongodb://localhost:27017/finova   # or your Atlas connection string
 JWT_SECRET=replace_with_a_long_random_secret
 PORT=3000
 ```
