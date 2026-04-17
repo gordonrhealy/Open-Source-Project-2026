@@ -1,63 +1,138 @@
-# Open-Source-Project-2026
-Financial Tracker Web app
-Prototype Code for for web app
-to visually record financial data
-and display in a pie chart.
-Includes login facility.
-Also includes main.js and package.json, needed to make a .exe version of app
-# Financial Tracker Web App
+# 🪙 Finova — Personal Finance Tracker
 
-A simple, lightweight financial tracking application built as a web app and packaged into a Windows executable using Electron. It allows users to record income and expenses, view totals, and manage their personal finances in an intuitive interface.
-
----
-
-## 📌 Features
-
-- Add income and expense entries with descriptions and amounts  
-- Automatic calculation of totals and balance  
-- Clean, responsive UI  
-- Local data storage (no external database required unless configured)  
-- Packaged as a standalone `.exe` for Windows using Electron  
+A full-stack personal finance tracker with MongoDB, JWT authentication, and rich analytics.
 
 ---
 
 ## 🚀 Tech Stack
 
-- **Frontend:** HTML, CSS, JavaScript  
-- **Backend (if applicable):** Node.js  
-- **Packaging:** Electron  
-- **Development Environment:** Visual Studio Code  
+| Layer | Technology |
+|-------|-----------|
+| Frontend | HTML, CSS, JavaScript, Chart.js |
+| Backend | Node.js, Express.js |
+| Database | MongoDB + Mongoose ODM |
+| Auth | JWT + bcrypt |
 
 ---
 
-## 🛠️ Running the Web App (Development Mode)
+## 📁 Project Structure
 
-To run the project as a web app:
+```
+finova/
+├── server.js              # Main Express server
+├── package.json           # Dependencies
+├── .env.example           # Environment variables template
+├── models/
+│   ├── User.js            # User schema (bcrypt hashed passwords)
+│   ├── Transaction.js     # Transaction schema
+│   └── Budget.js          # Budget schema
+├── routes/
+│   ├── auth.js            # Register, Login, /me, Settings
+│   ├── transactions.js    # CRUD + filters + summary
+│   └── budgets.js         # Budget CRUD
+├── middleware/
+│   └── auth.js            # JWT verification middleware
+└── public/
+    └── index.html         # Full SPA frontend
+```
 
-```bash
-git clone <https://github.com/gordonrhealy/Open-Source-Project-2026.git>
-cd (File or Folder)
-npm install
-npm start
+---
 
-
-## 🛠️ Building the Windows Executable Yourself
-
-You can package the Financial Tracker into a standalone Windows `.exe` using Electron. This lets the app run on any Windows machine without needing Node.js, a browser, or development tools.
+## ⚙️ Setup & Installation
 
 ### Prerequisites
-- Node.js installed on your system  
-- All project dependencies installed (`npm install`)  
-- Electron and your chosen builder configured in `package.json`
+- Node.js v18+ 
+- MongoDB (local or MongoDB Atlas)
 
-### Build Steps
+### 1. Install dependencies
+```bash
+npm install
+```
 
-1. Install all project dependencies:
-   ```bash
-   npm install
+### 2. Configure environment
+```bash
+cp .env.example .env
+```
+Edit `.env`:
+```env
+MONGODB_URI=mongodb://127.0.0.1:27017/finova   # or your Atlas connection string
+JWT_SECRET=replace_with_a_long_random_secret
+PORT=3000
+```
 
-2. npm run build
+### 3. Start the server
 
-3. npx electron-builder
+Development (auto-restart):
+```bash
+npm run dev
+```
 
-> Written with [StackEdit](https://stackedit.io/).
+Production:
+```bash
+npm start
+```
+
+### 4. Open in browser
+```
+http://localhost:3000
+```
+
+---
+
+## 🌐 Using MongoDB Atlas (Cloud)
+
+1. Create a free account at [mongodb.com/cloud/atlas](https://mongodb.com/cloud/atlas)
+2. Create a cluster → Get connection string
+3. Replace `MONGODB_URI` in `.env`:
+```
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/finova
+```
+
+---
+
+## 🔌 API Reference
+
+### Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login, returns JWT |
+| GET | `/api/auth/me` | Get current user |
+| PATCH | `/api/auth/settings` | Update profile |
+
+### Transactions
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/transactions` | List (with filters: type, category, from, to, search) |
+| POST | `/api/transactions` | Create transaction |
+| PATCH | `/api/transactions/:id` | Edit transaction |
+| DELETE | `/api/transactions/:id` | Delete one |
+| DELETE | `/api/transactions` | Delete all (user's) |
+| GET | `/api/transactions/summary` | Aggregated stats |
+
+### Budgets
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/budgets` | List budgets |
+| POST | `/api/budgets` | Upsert budget |
+| DELETE | `/api/budgets/:id` | Delete budget |
+
+---
+
+## ✨ Features
+
+- **Secure Auth** — JWT tokens (7-day expiry) + bcrypt password hashing
+- **Dashboard** — Income, expenses, balance, savings rate, top category, daily average, this-month snapshot
+- **Add Entry** — Income & expense forms with category, date, note, recurring flag
+- **Transaction History** — Search, filter by type/category/month, sort, paginated (20/page), edit & delete
+- **Analytics** — Donut chart, pie chart, monthly bar chart, cumulative line chart, spending heatmap
+- **Budgets** — Per-category monthly limits with live progress bars + alerts at 80% and 100%
+- **Settings** — Email, currency selector (8 currencies), danger zone
+- **Export CSV** — One-click export of all transactions
+- **Responsive** — Works on mobile, tablet, desktop, and wide screens
+- **Auto Login** — JWT persisted in localStorage, restored on reload
+
+---
+
+## 📜 License
+MIT

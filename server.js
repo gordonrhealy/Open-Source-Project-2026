@@ -1,69 +1,44 @@
-// server.js
-// server.js
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+require('dotenv').config();
+const express    = require('express');
+const mongoose   = require('mongoose');
+const cors       = require('cors');
+const path       = require('path');
 
-const app = express();
-const PORT = 3000;
+const app  = express();
+const PORT = process.env.PORT || 3000;
 
-// Middleware
+// ── Middleware ──────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Connect to MongoDB
-mongoose.connect("mongodb://127.0.0.1:27017/financialApp")
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log(err));
+// ── Routes ──────────────────────────────────────────────
+app.use('/api/auth',         require('./routes/auth'));
+app.use('/api/transactions', require('./routes/transactions'));
+app.use('/api/budgets',      require('./routes/budgets'));
 
-// User model
-const userSchema = new mongoose.Schema({
-    username: { type: String, unique: true },
-    password: String,
-    financeData: Object
+// ── Catch-all → serve frontend ──────────────────────────
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-
-
-const User = mongoose.model("User", userSchema);
-
-// --- AUTH ROUTES ---
-app.post("/register", async (req, res) => {
-    const { username, password } = req.body;
-    const exists = await User.findOne({ username });
-    if (exists) return res.status(400).send("User exists");
-
-    const user = new User({ username, password, financeData: {} });
-    await user.save();
-    res.status(201).send("Registered");
+// ── Global error handler ────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Unexpected server error' });
 });
 
-app.post("/login", async (req, res) => {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username, password });
-    if (!user) return res.status(401).send("Invalid login");
+// ── Connect to MongoDB, then start ─────────────────────
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/finova';
 
-    res.status(200).send("Logged in");
-});
-
-// --- SAVE / LOAD FINANCE DATA ---
-app.post("/save", async (req, res) => {
-    const { username, data } = req.body;
-    const user = await User.findOne({ username });
-    if (!user) return res.status(404).send("User not found");
-
-    user.financeData = data;
-    await user.save();
-    res.status(200).send("Saved");
-});
-
-app.get("/load/:username", async (req, res) => {
-    const { username } = req.params;
-    const user = await User.findOne({ username });
-    if (!user) return res.status(404).send("User not found");
-
-    res.json(user.financeData);
-});
-
-// Start server
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log('✅ MongoDB connected:', MONGODB_URI);
+    app.listen(PORT, () => {
+      console.log(`🚀 Finova server running → http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection failed:', err.message);
+    process.exit(1);
+  });
