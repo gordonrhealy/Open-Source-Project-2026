@@ -50,7 +50,7 @@ You can package the Financial Tracker into a standalone Windows `.exe` using Ele
 - All project dependencies installed (`npm install`)  
 - Electron and your chosen builder configured in `package.json`
 
-### Build Steps
+### Build Steps To (build exe file)
 
 1. Install all project dependencies:
    ```bash
