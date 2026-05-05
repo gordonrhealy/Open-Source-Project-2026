@@ -348,3 +348,60 @@ Double-click build-windows-exe.bat
 Double-click release\Start-Finova-EXE.bat
 Open http://localhost:3000
 ```
+
+---
+
+# Added Settings and AI Feature Guide
+
+This build now includes a new top navigation with **Dashboard**, **Settings**, and **AI Search**.
+
+## Settings Menu
+
+Inside the app, open **Settings** to use:
+
+1. **Light/Dark/System Theme**
+   - Choose Light mode, Dark mode, or System default.
+
+2. **Language Selection**
+   - Choose English, Bangla, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, or Arabic.
+
+3. **Currency Selection**
+   - Choose EUR, USD, GBP, BDT, INR, JPY, AUD, CAD, CHF, or CNY.
+   - The dashboard amount display updates based on the selected currency symbol.
+
+4. **Location and Timezone**
+   - Save city, country, and timezone such as `Europe/Dublin` or `Asia/Dhaka`.
+
+5. **Export CSV or PDF**
+   - Export all transactions as CSV.
+   - Export a simple financial summary report as PDF.
+
+6. **Import CSV and AI Receipt Assistant**
+   - Paste CSV data and import transactions.
+   - Paste receipt text or upload `.txt`, `.csv`, or `.json` receipt files.
+   - Finova detects likely amount, category, date, merchant/description, payment method, and confidence.
+
+7. **Password Change**
+   - Users can change their password from the Security section.
+
+## AI Search
+
+Open **AI Search** to ask natural-language questions about your transactions.
+
+Examples:
+
+```text
+biggest expense
+food spending
+transport this month
+cash payments
+latest income
+```
+
+The app searches your own transaction history and returns matching transactions, totals, and smart finance signals.
+
+## Important Note About Receipt AI
+
+The included receipt assistant uses local rule-based AI-style detection. It does not send receipt data to any external AI provider. It works best when you paste receipt text or upload text-based receipt files.
+
+For true camera/photo/PDF receipt scanning, the next upgrade should add OCR with a service such as Tesseract.js, Google Vision, Azure Vision, or OpenAI Vision.
