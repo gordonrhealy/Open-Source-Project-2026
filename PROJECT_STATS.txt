@@ -1,0 +1,7 @@
+=== PROJECT STATISTICS ===
+Total Files: 30
+JavaScript Files: 20
+React Components: 1
+
+Lines of Code:
+ 2912 total
