@@ -1,0 +1,10 @@
+./backend/.env.example
+./backend/server.js
+./backend/models/Transaction.js
+./backend/models/Account.js
+./backend/models/User.js
+./backend/config/passport.js
+./backend/routes/insights.js
+./backend/package.json
+./README.md
+./frontend/package.json
